@@ -1,16 +1,16 @@
 {
   "name": "spacemouse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": "Evan Wallace",
   "description": "An OS X driver for the 3dconnexion SpaceMouse in JavaScript",
   "license": "MIT",
   "bin": {
-    "spacemouse": "daemon"
+    "spacemouse": "daemon.js"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/evanw/node-spacemouse"
-  }
+  },
   "dependencies": {
     "ffi": "1.2.7",
     "ws": "0.7.0"

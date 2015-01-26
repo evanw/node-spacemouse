@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var spacemouse = require('./spacemouse');
 var ws = require('ws');
 

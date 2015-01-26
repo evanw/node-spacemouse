@@ -1,0 +1,111 @@
+<body style="overflow:hidden;margin:0;"></body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r70/three.min.js"></script>
+<script>
+
+var current = { tx: 0, ty: 0, tz: 0, rx: 0, ry: 0, rz: 0 };
+
+function connect() {
+  var socket = new WebSocket('ws://' + location.hostname + ':8123');
+  var isOpen = false;
+  socket.onopen = function() {
+    console.log('connected to daemon');
+    isOpen = true;
+  };
+  socket.onmessage = function(e) {
+    current = JSON.parse(e.data);
+  };
+  socket.onclose = function() {
+    if (isOpen) console.log('disconnected from daemon');
+    setTimeout(connect, 250);
+  };
+}
+
+function main() {
+  var translation = new THREE.Vector3();
+  var quaternion = new THREE.Quaternion();
+  var euler = new THREE.Euler();
+
+  function render() {
+    var newTime = now();
+    var seconds = (newTime - oldTime) / 1000;
+    oldTime = newTime;
+
+    var rotationScale = 25 * seconds;
+    euler.set(
+      current.rx * rotationScale,
+      -current.rz * rotationScale,
+      current.ry * rotationScale);
+    quaternion.setFromEuler(euler);
+    camera.quaternion.multiply(quaternion);
+    camera.quaternion.normalize();
+
+    var translationScale = 50 * seconds;
+    translation.set(
+      current.tx * translationScale,
+      -current.tz * translationScale,
+      current.ty * translationScale);
+    translation.applyQuaternion(camera.quaternion);
+    camera.position.add(translation);
+
+    requestAnimationFrame(render);
+    renderer.render(scene, camera);
+  }
+
+  onresize = function() {
+    var ratio = window.devicePixelRatio || 1;
+    renderer.setSize(Math.round(innerWidth * ratio), Math.round(innerHeight * ratio));
+    renderer.domElement.style.width = innerWidth + 'px';
+    renderer.domElement.style.height = innerHeight + 'px';
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+  };
+
+  var now = window.performance && performance.now
+    ? function() { return performance.now(); }
+    : function() { return +new Date; };
+
+  var oldTime = now();
+  var scene = new THREE.Scene();
+  var renderer = new THREE.WebGLRenderer();
+  var camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+  var material = new THREE.ShaderMaterial({
+    vertexShader: [
+      'void main() {',
+      '  vec4 vertex = modelViewMatrix * vec4(position, 1.0);',
+      '  gl_PointSize = 10.0 / length(vertex.xyz);',
+      '  gl_Position = projectionMatrix * vertex;',
+      '}',
+    ].join('\n'),
+    fragmentShader: [
+      'void main() {',
+      '  float radius = max(0.0, 1.0 - length(gl_PointCoord.xy * 2.0 - 1.0));',
+      '  gl_FragColor = vec4(radius * radius);',
+      '}',
+    ].join('\n'),
+    blending: THREE.AdditiveBlending,
+    depthTest: false,
+    transparent: true
+  });
+  var geometry = new THREE.Geometry();
+
+  for (var i = 0; i < 100000; i++) {
+    var vertex = new THREE.Vector3();
+    vertex.x = Math.random() * 2 - 1;
+    vertex.y = Math.random() * 2 - 1;
+    vertex.z = Math.random() * 2 - 1;
+    geometry.vertices.push(vertex);
+  }
+
+  scene.add(new THREE.PointCloud(geometry, material));
+  camera.position.z = 5;
+  camera.matrixAutoUpdate = true;
+  document.body.appendChild(renderer.domElement);
+
+  onresize();
+  connect();
+  render();
+}
+
+main();
+
+</script>

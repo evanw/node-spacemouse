@@ -12,7 +12,7 @@
     "url": "https://github.com/evanw/node-spacemouse"
   },
   "dependencies": {
-    "ffi": "1.2.7",
+    "ffi": "2.0.0",
     "ws": "0.7.0"
   }
 }
